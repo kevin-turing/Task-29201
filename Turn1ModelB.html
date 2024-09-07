@@ -1,1 +1,159 @@
-T1MB
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Nokia Snake Game</title>
+<style>
+  canvas { 
+    border: 2px solid #000; 
+    display: block; 
+    margin: 20px auto; 
+    background: #00a86b; /* Nokia green */
+  }
+  body { 
+    font-family: 'Arial', sans-serif; 
+    background: #f0f0f0; 
+    text-align: center; 
+  }
+  #menu, #pause {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: white;
+    display: none;
+  }
+  .button {
+    padding: 10px 20px;
+    margin: 10px;
+    background: #00a86b;
+    border: none;
+    color: white;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="menu">
+  <h1>Nokia Snake</h1>
+  <button class="button" onclick="startGame()">Play</button>
+  <button class="button" onclick="showSettings()">Settings</button>
+</div>
+
+<div id="settings" style="display:none;">
+  <h2>Difficulty</h2>
+  <button class="button" onclick="setDifficulty('easy')">Easy</button>
+  <button class="button" onclick="setDifficulty('medium')">Medium</button>
+  <button class="button" onclick="setDifficulty('hard')">Hard</button>
+</div>
+
+<div id="pause">
+  <h2>Paused</h2>
+  <button class="button" onclick="resumeGame()">Resume</button>
+  <button class="button" onclick="quitGame()">Quit</button>
+</div>
+
+<canvas id="gameCanvas" width="400" height="400"></canvas>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  let gameLoop, difficulty = 'medium', snake, food, enemies = [], powerup, score = 0;
+
+  // Game initialization
+  function initGame() {
+      snake = [{x: 200, y: 200}];
+      spawnFood();
+      spawnPowerUp();
+      enemies = [{x: 50, y: 50, dir: Math.random() * 2 * Math.PI}];
+      score = 0;
+      gameLoop = setInterval(gameCycle, 1000 / (difficulty === 'easy' ? 5 : difficulty === 'medium' ? 10 : 15));
+  }
+
+  // Game cycle
+  function gameCycle() {
+      update();
+      draw();
+  }
+
+  function update() {
+      // Snake movement
+      let head = {x: snake[0].x + (snake.dx || 0), y: snake[0].y + (snake.dy || 0)};
+      snake.unshift(head);
+      if (snake.length > score + 1) snake.pop();
+
+      // Collision detection, food eating, etc.
+      if (head.x === food.x && head.y === food.y) {
+          score++;
+          spawnFood();
+          spawnPowerUp();
+      }
+
+      // Powerup logic
+      if (powerup.active && Date.now() - powerup.startTime > 5000) {
+          powerup.active = false;
+          clearInterval(gameLoop);
+          gameLoop = setInterval(gameCycle, 1000 / (difficulty === 'easy' ? 5 : difficulty === 'medium' ? 10 : 15));
+      }
+
+      // Enemy update
+      enemies.forEach(e => {
+          e.x += Math.cos(e.dir) * 2;
+          e.y += Math.sin(e.dir) * 2;
+          // Simple AI: change direction occasionally
+          if (Math.random() < 0.02) e.dir += (Math.random() - 0.5);
+      });
+
+      // Check collisions with walls or self
+      // ... (implement collision logic)
+  }
+
+  function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Draw snake, food, enemies, and powerup
+      ctx.fillStyle = 'black';
+      snake.forEach(segment => ctx.fillRect(segment.x, segment.y, 10, 10));
+      ctx.fillStyle = 'red';
+      ctx.fillRect(food.x, food.y, 10, 10);
+      // Draw enemies and powerup similarly
+  }
+
+  function spawnFood() {
+      food = {x: Math.floor(Math.random() * 40) * 10, y: Math.floor(Math.random() * 40) * 10};
+  }
+
+  function spawnPowerUp() {
+      powerup = {x: Math.floor(Math.random() * 40) * 10, y: Math.floor(Math.random() * 40) * 10, active: false, startTime: 0};
+  }
+
+  // Event listeners for controls
+  $(document).keydown(function(e) {
+      switch(e.key) {
+          case "ArrowUp": if(snake.dy !== 10) {snake.dx = 0; snake.dy = -10;} break;
+          case "ArrowDown": if(snake.dy !== -10) {snake.dx = 0; snake.dy = 10;} break;
+          case "ArrowLeft": if(snake.dx !== 10) {snake.dx = -10; snake.dy = 0;} break;
+          case "ArrowRight": if(snake.dx !== -10) {snake.dx = 10; snake.dy = 0;} break;
+          case "Escape": pauseGame(); break;
+      }
+  });
+
+  // Game control functions
+  function startGame() { $('#menu').hide(); initGame(); }
+  function showSettings() { $('#menu').hide(); $('#settings').show(); }
+  function setDifficulty(d) { difficulty = d; $('#settings').hide(); $('#menu').show(); }
+  function pauseGame() { clearInterval(gameLoop); $('#pause').show(); }
+  function resumeGame() { gameLoop = setInterval(gameCycle, 1000 / (difficulty === 'easy' ? 5 : difficulty === 'medium' ? 10 : 15)); $('#pause').hide(); }
+  function quitGame() { clearInterval(gameLoop); $('#pause').hide(); $('#menu').show(); }
+
+  // Initial state
+  $('#menu').show();
+</script>
+
+</body>
+</html>
